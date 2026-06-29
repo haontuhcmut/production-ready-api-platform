@@ -1,4 +1,3 @@
-<<<<<<< HEAD
 ## Summary
 
 <!-- What did you change? -->
@@ -76,4 +75,3 @@
 * [ ] No breaking changes (or documented if any)
 * [ ] Code follows project conventions
 * [ ] Added/updated documentation (if needed)
->>>>>>> 880a6f7ea3ca1b0f56b8e9009f6cc42a73710e5c
