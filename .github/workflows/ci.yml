@@ -4,6 +4,11 @@ on:
   push:
     branches:
       - feature/issue2-cicd
+      - dev
+      - main
+  pull_request:
+    branches:
+      - main
 jobs:
   test:
     name: Run API services
