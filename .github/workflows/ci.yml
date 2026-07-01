@@ -27,22 +27,12 @@ jobs:
         with:
           version: "latest"
 
-      - name: Install deps
+      - name: Install deps and Ruff
         run: |
           uv sync
+          uv run ruff check .
+          uv run ruff format --check .
 
       - name: Run tests
         run: |
           uv run pytest
-
-  build:
-    name: Build Docker Image
-    runs-on: self-hosted
-    needs: test  # only run if test passed
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build image
-        run: docker build -f app/Dockerfile -t api-services:latest .
