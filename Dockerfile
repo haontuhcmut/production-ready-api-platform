@@ -1,3 +1,4 @@
+#=====FastAPI Image=====
 FROM python:3.14-slim
 
 COPY --from=ghcr.io/astral-sh/uv:0.8 /uv /uvx /bin/
@@ -11,8 +12,7 @@ COPY pyproject.toml uv.lock ./
 RUN --mount=type=cache,target=/root/.cache/uv \
     uv sync --frozen --no-dev --no-install-project
 
-COPY . .
-
+COPY backend/app /app
 EXPOSE 8000
 
 RUN chmod +x ./entrypoint.sh

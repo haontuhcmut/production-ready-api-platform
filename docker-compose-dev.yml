@@ -1,10 +1,57 @@
+networks:
+  be_network:
+    name: network
+    driver: bridge
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.10.10.0/24  # Define a custom subnet:
+          # - Avoid conflicts with VPN / LAN networks
+          # - Allow static IP assignment for containers
+volumes:
+  prometheus_data:
+    name: prometheus_data
+
 services:
   api:
     build:
       context: .
-      dockerfile: app/Dockerfile
+      dockerfile: Dockerfile
     container_name: fastapi_app
     ports:
       - "8000:8000"
     environment:
       - ENV=dev
+#    volumes:
+#      - ./backend/app:/app
+    networks:
+      - be_network
+
+  prometheus:
+    image: prom/prometheus:main-distroless
+    restart: always
+    ports:
+      - "${DOCKER_MAP_PROMETHEUS_PORT:-9090}:9090"
+    container_name: prometheus
+    volumes:
+      - ./deploy/backend/grafana/prometheus.yml:/workspace/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - be_network
+    command:
+      - --web.enable-remote-write-receiver
+      - --enable-feature=exemplar-storage
+      - --config.file=/workspace/prometheus.yml
+
+  grafana:
+    image: grafana/grafana:nightly-slim
+    restart: always
+    ports:
+      - "${DOCKER_MAP_GRAFANA_PORT:-3000}:3000"
+    container_name: grafana
+    depends_on:
+      - prometheus
+    volumes:
+      - ./deploy/backend/grafana/grafana.ini:/etc/grafana/grafana.ini
+    networks:
+      - be_network

@@ -1,7 +1,7 @@
 import pytest
 from httpx import ASGITransport, AsyncClient
 
-from app.main import app
+from backend.app.main import app
 
 base_url = "http://127.0.0.1:8000"
 
