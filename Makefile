@@ -1,5 +1,5 @@
 
-.PHONY: help install dev run start prod clean
+.PHONY: help install dev run start prod lint format check clean
 .PHONY: docker-dev docker-prod docker-logs docker-stop docker-clean
 
 .DEFAULT_GOAL := help
@@ -10,6 +10,7 @@ PORT ?= 8000
 WORKERS ?= 2
 LOG_LEVEL ?= info
 
+# Docker Compose files
 COMPOSE_DEV := docker-compose-dev.yml
 COMPOSE_PROD := docker-compose-prod.yml
 
@@ -19,7 +20,6 @@ help: ## Show available commands
 
 install: ## Install project dependencies
 	uv sync
-	uv run pre-commit install
 
 dev: ## Run FastAPI locally in development mode
 	ENV=dev HOST=$(HOST) PORT=$(PORT) LOG_LEVEL=$(LOG_LEVEL) ./entrypoint.sh
@@ -32,8 +32,15 @@ start: ## Start FastAPI locally using default configuration
 prod: ## Run FastAPI locally in production mode
 	ENV=prod HOST=$(HOST) PORT=$(PORT) WORKERS=$(WORKERS) LOG_LEVEL=$(LOG_LEVEL) ./entrypoint.sh
 
-pre-commit: ## Run all pre-commit hooks on all files
-	uv run pre-commit run --all-files
+lint: ## Run Ruff lint checks
+	uv run ruff check .
+
+format: ## Format Python files with Ruff
+	uv run ruff format .
+
+check: ## Check linting and formatting
+	uv run ruff check .
+	uv run ruff format --check .
 
 clean: ## Remove Python cache files
 	find . -type d -name __pycache__ -prune -exec rm -rf {} +
@@ -51,5 +58,5 @@ docker-logs: ## Follow development container logs
 docker-stop: ## Stop development container
 	docker compose -f $(COMPOSE_DEV) down
 
-docker-clean: ## Stop development container and remove volumes
+docker-clean: ## Stop development container and remove its volumes
 	docker compose -f $(COMPOSE_DEV) down --volumes
