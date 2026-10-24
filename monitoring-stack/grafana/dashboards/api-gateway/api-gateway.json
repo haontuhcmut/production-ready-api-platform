@@ -1,33 +1,42 @@
 {
-  "uid": "fastapi-overview",
-  "title": "FastAPI Observability",
-  "tags": ["fastapi", "observability"],
+  "uid": "api-gateway",
+  "title": "API Gateway — Kong & Nginx",
+  "tags": [
+    "kong",
+    "nginx",
+    "gateway",
+    "observability"
+  ],
   "timezone": "browser",
   "schemaVersion": 39,
   "version": 1,
-  "refresh": "10s",
+  "refresh": "30s",
   "time": {
-    "from": "now-15m",
+    "from": "now-1h",
     "to": "now"
   },
+  "annotations": {
+    "list": []
+  },
+  "links": [],
   "panels": [
     {
-      "id": 1,
-      "title": "FastAPI Availability",
+      "id": 9001,
+      "title": "Kong Availability",
       "type": "stat",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 5,
-        "w": 6,
         "x": 0,
-        "y": 0
+        "y": 0,
+        "w": 8,
+        "h": 5
       },
       "targets": [
         {
-          "expr": "up{job=\"fastapi\"}",
+          "expr": "up{job=\"kong\"}",
           "refId": "A"
         }
       ],
@@ -35,87 +44,53 @@
         "defaults": {
           "min": 0,
           "max": 1,
-          "thresholds": {
-            "mode": "absolute",
-            "steps": [
-              {
-                "color": "red",
-                "value": null
-              },
-              {
-                "color": "green",
-                "value": 1
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "green"
+                }
               }
-            ]
-          }
+            }
+          ]
         },
         "overrides": []
       },
       "options": {
         "reduceOptions": {
-          "calcs": ["lastNotNull"],
+          "calcs": [
+            "lastNotNull"
+          ],
           "values": false
         },
         "colorMode": "background",
-        "graphMode": "none",
-        "textMode": "auto"
+        "graphMode": "none"
       }
     },
     {
-      "id": 2,
-      "title": "HTTP Requests Per Second",
+      "id": 9003,
+      "title": "Kong Request Rate",
       "type": "timeseries",
       "datasource": {
         "type": "prometheus",
         "uid": "prometheus"
       },
       "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 6,
-        "y": 0
-      },
-      "targets": [
-        {
-          "expr": "sum(rate(http_requests_total{job=\"fastapi\"}[5m]))",
-          "legendFormat": "Requests/sec",
-          "refId": "A"
-        }
-      ],
-      "fieldConfig": {
-        "defaults": {
-          "unit": "reqps"
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "showLegend": true,
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "single"
-        }
-      }
-    },
-    {
-      "id": 3,
-      "title": "HTTP 5xx Errors",
-      "type": "timeseries",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "prometheus"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
         "x": 0,
-        "y": 8
+        "y": 5,
+        "w": 12,
+        "h": 8
       },
       "targets": [
         {
-          "expr": "sum(rate(http_requests_total{job=\"fastapi\",status=~\"5..\"}[5m]))",
-          "legendFormat": "5xx errors/sec",
+          "expr": "sum(rate(kong_http_requests_total{job=\"kong\"}[5m]))",
+          "legendFormat": "All Kong requests",
           "refId": "A"
         }
       ],
@@ -133,22 +108,56 @@
       }
     },
     {
-      "id": 4,
-      "title": "FastAPI Container Logs",
+      "id": 9002,
+      "title": "Kong HTTP 5xx Requests per Second",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 5,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "sum(rate(kong_http_requests_total{job=\"kong\",code=~\"5..\"}[5m]))",
+          "legendFormat": "Kong 5xx",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps"
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "showLegend": true,
+          "placement": "bottom"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "title": "Gateway Error Logs",
       "type": "logs",
       "datasource": {
         "type": "loki",
         "uid": "loki"
       },
       "gridPos": {
-        "h": 10,
-        "w": 24,
         "x": 0,
-        "y": 16
+        "y": 18,
+        "w": 24,
+        "h": 10
       },
       "targets": [
         {
-          "expr": "{container=\"fastapi_app\"}",
+          "expr": "{container=~\"api-nginx|api-kong\"} |~ \"502|503|upstream.*(error|refused|failed)\"",
           "refId": "A"
         }
       ],
@@ -161,9 +170,5 @@
         "sortOrder": "Descending"
       }
     }
-  ],
-  "annotations": {
-    "list": []
-  },
-  "links": []
+  ]
 }

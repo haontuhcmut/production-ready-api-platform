@@ -1,26 +1,53 @@
-
 groups:
-  - name: fastapi-alerts
+  - name: service-availability
     rules:
       - alert: FastAPIUnavailable
-        expr: up{job="fastapi"} == 0
+        expr: up{job="fastapi"} == 0 or absent(up{job="fastapi"})
         for: 1m
         labels:
           severity: critical
         annotations:
           summary: FastAPI is unavailable
-          description: Prometheus cannot scrape the FastAPI metrics endpoint for more than one minute.
+          description: Prometheus cannot scrape the FastAPI metrics endpoint.
 
+      - alert: KongUnavailable
+        expr: up{job="kong"} == 0 or absent(up{job="kong"})
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kong is unavailable
+          description: Prometheus cannot scrape the Kong metrics endpoint.
+
+  - name: fastapi-performance
+    rules:
       - alert: FastAPIHigh5xxErrorRate
         expr: |
           (
             sum(rate(http_requests_total{job="fastapi", status=~"5.."}[5m]))
             /
-            clamp_min(sum(rate(http_requests_total{job="fastapi"}[5m])), 1)
+            clamp_min(sum(rate(http_requests_total{job="fastapi"}[5m])), 1e-9)
           ) > 0.05
+          and
+          sum(rate(http_requests_total{job="fastapi"}[5m])) > 0.1
         for: 2m
         labels:
           severity: warning
         annotations:
           summary: FastAPI 5xx error rate is high
-          description: More than 5 percent of FastAPI requests returned 5xx responses over the evaluation window.
+          description: More than 5 percent of requests returned 5xx responses, with sufficient traffic.
+
+      - alert: FastAPIHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(http_request_duration_seconds_bucket{job="fastapi"}[5m])
+            )
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: FastAPI p95 latency is high
+          description: The 95th percentile request latency has exceeded one second for five minutes.
