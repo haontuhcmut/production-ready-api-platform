@@ -1,10 +1,73 @@
+
 services:
   api:
     build:
       context: .
       dockerfile: backend/app/Dockerfile
     container_name: fastapi_app
-    ports:
-      - "8000:8000"
     environment:
-      - ENV=dev
+      ENV: dev
+      LOG_LEVEL: info
+    expose:
+      - "8000"
+    restart: unless-stopped
+    networks:
+      - gateway-network
+      - observability-network
+
+  kong:
+    image: kong:3.9
+    container_name: api-kong
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "off"
+    volumes:
+      - ./gateway/kong/kong.yml:/etc/kong/kong.yml:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - gateway-network
+      - observability-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: api-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./gateway/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - kong
+    restart: unless-stopped
+    networks:
+      - gateway-network
+      - observability-network
+
+  grafana:
+    image: grafana/grafana:13.1.0
+    container_name: monitoring-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in monitoring-stack/.env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      - observability-network
+
+networks:
+  gateway-network:
+    name: gateway-network
+
+  observability-network:
+    name: observability-network
+    external: true

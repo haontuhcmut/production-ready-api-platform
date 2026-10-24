@@ -1,9 +1,8 @@
-
 discovery.docker "containers" {
   host = "unix:///var/run/docker.sock"
 }
 
-discovery.relabel "container_logs" {
+discovery.relabel "containers" {
   targets = discovery.docker.containers.targets
 
   rule {
@@ -19,16 +18,17 @@ discovery.relabel "container_logs" {
 }
 
 loki.source.docker "containers" {
-  host          = "unix:///var/run/docker.sock"
-  targets       = discovery.docker.containers.targets
-  relabel_rules = discovery.relabel.container_logs.rules
-  labels        = {
+  host    = "unix:///var/run/docker.sock"
+  targets = discovery.relabel.containers.output
+
+  labels = {
     job = "docker",
   }
-  forward_to = [loki.write.local.receiver]
+
+  forward_to = [loki.write.default.receiver]
 }
 
-loki.write "local" {
+loki.write "default" {
   endpoint {
     url = "http://loki:3100/loki/api/v1/push"
   }

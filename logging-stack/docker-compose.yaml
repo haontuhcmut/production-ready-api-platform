@@ -13,6 +13,7 @@ services:
     restart: unless-stopped
     networks:
       - logging
+      - observability-network
 
   alloy:
     image: grafana/alloy:v1.19.2
@@ -34,29 +35,14 @@ services:
     networks:
       - logging
 
-  grafana:
-    image: grafana/grafana:13.1.0
-    container_name: logging-grafana
-    environment:
-      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
-      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
-      GF_USERS_ALLOW_SIGN_UP: "false"
-    ports:
-      - "127.0.0.1:3000:3000"
-    volumes:
-      - grafana-data:/var/lib/grafana
-      - ./grafana/provisioning:/etc/grafana/provisioning:ro
-    depends_on:
-      - loki
-    restart: unless-stopped
-    networks:
-      - logging
-
 networks:
   logging:
     name: logging-network
 
+  observability-network:
+    external: true
+    name: observability-network
+
 volumes:
   loki-data:
   alloy-data:
-  grafana-data:

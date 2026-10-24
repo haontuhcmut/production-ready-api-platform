@@ -1,6 +1,9 @@
 import logging
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
+from prometheus_fastapi_instrumentator import Instrumentator
+
+from backend.app.middleware.request_logging import RequestLoggingMiddleware
 
 logging.basicConfig(
     level=logging.INFO,
@@ -11,17 +14,20 @@ logger = logging.getLogger(__name__)
 
 app = FastAPI()
 
+app.add_middleware(RequestLoggingMiddleware)
+
+Instrumentator().instrument(app).expose(app, endpoint="/metrics", include_in_schema=False)
+
 
 @app.get("/health")
-async def health():
-    logger.info("Health check requested")
+async def health(request: Request):
+    logger.info(
+        "Health check requested request_id=%s",
+        request.state.request_id,
+    )
     return {"status": "ok"}
 
 
 @app.get("/test-error")
 async def test_error():
-    try:
-        raise ValueError("Example error for logging demonstration")
-    except ValueError:
-        logger.exception("Example application error")
-        raise
+    raise ValueError("Example error for logging demonstration")
