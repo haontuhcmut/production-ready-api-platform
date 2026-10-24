@@ -1,0 +1,62 @@
+
+services:
+  loki:
+    image: grafana/loki:3.7.3
+    container_name: logging-loki
+    command:
+      - -config.file=/etc/loki/loki-config.yml
+    ports:
+      - "127.0.0.1:3100:3100"
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    restart: unless-stopped
+    networks:
+      - logging
+
+  alloy:
+    image: grafana/alloy:v1.19.2
+    container_name: logging-alloy
+    command:
+      - run
+      - --server.http.listen-addr=0.0.0.0:12345
+      - --storage.path=/var/lib/alloy/data
+      - /etc/alloy/config.alloy
+    ports:
+      - "127.0.0.1:12345:12345"
+    volumes:
+      - ./alloy/config.alloy:/etc/alloy/config.alloy:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - alloy-data:/var/lib/alloy/data
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - logging
+
+  grafana:
+    image: grafana/grafana:13.1.0
+    container_name: logging-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_ADMIN_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_ADMIN_PASSWORD:?Set GRAFANA_ADMIN_PASSWORD in .env}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    ports:
+      - "127.0.0.1:3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - loki
+    restart: unless-stopped
+    networks:
+      - logging
+
+networks:
+  logging:
+    name: logging-network
+
+volumes:
+  loki-data:
+  alloy-data:
+  grafana-data:

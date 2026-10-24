@@ -1,6 +1,6 @@
-
 .PHONY: help install dev run start prod lint format check clean
 .PHONY: docker-dev docker-prod docker-logs docker-stop docker-clean
+.PHONY: logging-up logging-down logging-logs logging-status logging-config
 
 .DEFAULT_GOAL := help
 
@@ -13,10 +13,11 @@ LOG_LEVEL ?= info
 # Docker Compose files
 COMPOSE_DEV := docker-compose-dev.yml
 COMPOSE_PROD := docker-compose-prod.yml
+COMPOSE_LOGGING := logging-stack/docker-compose.yaml
 
 help: ## Show available commands
-	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
-	awk 'BEGIN {FS = ":.*## "} {printf "%-16s %s\n", $$1, $$2}'
+	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) |
+	awk 'BEGIN {FS = ":.*## "} {printf "%-20s %s\n", $$1, $$2}'
 
 install: ## Install project dependencies
 	uv sync
@@ -60,3 +61,18 @@ docker-stop: ## Stop development container
 
 docker-clean: ## Stop development container and remove its volumes
 	docker compose -f $(COMPOSE_DEV) down --volumes
+
+logging-up: ## Start centralized logging stack
+	docker compose -f $(COMPOSE_LOGGING) up --build -d
+
+logging-down: ## Stop centralized logging stack
+	docker compose -f $(COMPOSE_LOGGING) down
+
+logging-logs: ## Follow centralized logging stack logs
+	docker compose -f $(COMPOSE_LOGGING) logs -f
+
+logging-status: ## Show centralized logging stack status
+	docker compose -f $(COMPOSE_LOGGING) ps
+
+logging-config: ## Validate logging stack Compose configuration
+	docker compose -f $(COMPOSE_LOGGING) config
