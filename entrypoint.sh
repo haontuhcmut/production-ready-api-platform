@@ -1,9 +1,8 @@
 #!/bin/bash
-set -e # stop on error
+set -e
 
 echo "Starting FastAPI application..."
 
-# Default configure
 ENV=${ENV:-prod}
 HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-8000}
@@ -14,21 +13,22 @@ echo "ENV=$ENV"
 echo "HOST=$HOST PORT=$PORT WORKERS=$WORKERS"
 
 if [ "$ENV" = "dev" ]; then
-  echo "Running in DEV mode (auto-reload enable)"
+    echo "Running in DEV mode"
 
-  exec uv run uvicorn app.main:app \
-    --host $HOST \
-    --port $PORT \
-    --reload \
-    --log-level $LOG_LEVEL
-
+    exec uv run uvicorn backend.app.main:app \
+        --host "$HOST" \
+        --port "$PORT" \
+        --reload \
+        --reload-dir backend \
+        --log-level "$LOG_LEVEL"
 else
-  echo "Running in PROD mode (gunicorn + uvicorn workers)"
-  exec gunicorn app.main:app \
-    -k uv run uvicorn.workers.UvicornWorker \
-    --bind $HOST:$PORT \
-    --workers $WORKERS \
-    --log-level $LOG_LEVEL \
-    --access-logfile - \
-    --error-logfile -
+    echo "Running in PROD mode"
+
+    exec uv run gunicorn backend.app.main:app \
+        -k uvicorn.workers.UvicornWorker \
+        --bind "$HOST:$PORT" \
+        --workers "$WORKERS" \
+        --log-level "$LOG_LEVEL" \
+        --access-logfile - \
+        --error-logfile -
 fi

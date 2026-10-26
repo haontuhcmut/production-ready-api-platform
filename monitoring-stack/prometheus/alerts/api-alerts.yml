@@ -1,0 +1,80 @@
+groups:
+  - name: service-availability
+    rules:
+      - alert: FastAPIUnavailable
+        expr: up{job="fastapi"} == 0 or absent(up{job="fastapi"})
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: FastAPI is unavailable
+          description: Prometheus cannot scrape the FastAPI metrics endpoint.
+
+      - alert: KongUnavailable
+        expr: up{job="kong"} == 0 or absent(up{job="kong"})
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Kong is unavailable
+          description: Prometheus cannot scrape the Kong metrics endpoint.
+
+      - alert: NginxProcessUnavailable
+        expr: nginx_up{job="nginx"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Nginx process is unavailable
+          description: The Nginx Prometheus exporter cannot reach or collect metrics from Nginx.
+
+  - name: fastapi-performance
+    rules:
+      - alert: FastAPIHigh5xxErrorRate
+        expr: |
+          (
+            sum(rate(http_requests_total{job="fastapi", status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(http_requests_total{job="fastapi"}[5m])), 1e-9)
+          ) > 0.05
+          and
+          sum(rate(http_requests_total{job="fastapi"}[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: FastAPI 5xx error rate is high
+          description: More than 5 percent of requests returned 5xx responses, with sufficient traffic.
+
+      - alert: FastAPIHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum by (le) (
+              rate(http_request_duration_seconds_bucket{job="fastapi"}[5m])
+            )
+          ) > 1
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: FastAPI p95 latency is high
+          description: The 95th percentile request latency has exceeded one second for five minutes.
+
+  - name: nginx-performance
+    rules:
+      - alert: NginxHigh5xxErrorRate
+        expr: |
+          (
+            sum(rate(nginx_http_requests_total{job="nginx", status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(nginx_http_requests_total{job="nginx"}[5m])), 1e-9)
+          ) > 0.05
+          and
+          sum(rate(nginx_http_requests_total{job="nginx"}[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Nginx 5xx error rate is high
+          description: More than 5 percent of requests returned 5xx responses with sufficient traffic.

@@ -1,10 +1,71 @@
+
 services:
   api:
     build:
       context: .
-      dockerfile: app/Dockerfile
+      dockerfile: backend/app/Dockerfile
     container_name: fastapi_app
-    ports:
-      - "8000:8000"
     environment:
-      - ENV=dev
+      ENV: dev
+      LOG_LEVEL: info
+    expose:
+      - "8000"
+    restart: unless-stopped
+    networks:
+      - gateway-network
+      - observability-network
+
+  kong:
+    image: kong:3.9
+    container_name: api-kong
+    environment:
+      KONG_DATABASE: "off"
+      KONG_DECLARATIVE_CONFIG: /etc/kong/kong.yml
+      KONG_PROXY_LISTEN: "0.0.0.0:8000"
+      KONG_ADMIN_LISTEN: "off"
+      KONG_STATUS_LISTEN: "0.0.0.0:8100"
+    expose:
+      - "8000"
+      - "8100"
+    volumes:
+      - ./gateway/kong/kong.yml:/etc/kong/kong.yml:ro
+    depends_on:
+      - api
+    restart: unless-stopped
+    networks:
+      - gateway-network
+      - observability-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: api-nginx
+    ports:
+      - "8080:80"
+    volumes:
+      - ./gateway/nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - kong
+    restart: unless-stopped
+    networks:
+      - gateway-network
+      - observability-network
+
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.4.2
+    container_name: api-nginx-exporter
+    command:
+      - --nginx.scrape-uri=http://nginx:8081/stub_status
+    depends_on:
+      - nginx
+    restart: unless-stopped
+    networks:
+      - gateway-network
+      - observability-network
+
+networks:
+  gateway-network:
+    name: gateway-network
+
+  observability-network:
+    name: observability-network
+    external: true
