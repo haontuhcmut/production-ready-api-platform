@@ -19,6 +19,15 @@ groups:
           summary: Kong is unavailable
           description: Prometheus cannot scrape the Kong metrics endpoint.
 
+      - alert: NginxProcessUnavailable
+        expr: nginx_up{job="nginx"} == 0
+        for: 1m
+        labels:
+          severity: critical
+        annotations:
+          summary: Nginx process is unavailable
+          description: The Nginx Prometheus exporter cannot reach or collect metrics from Nginx.
+
   - name: fastapi-performance
     rules:
       - alert: FastAPIHigh5xxErrorRate
@@ -51,3 +60,21 @@ groups:
         annotations:
           summary: FastAPI p95 latency is high
           description: The 95th percentile request latency has exceeded one second for five minutes.
+
+  - name: nginx-performance
+    rules:
+      - alert: NginxHigh5xxErrorRate
+        expr: |
+          (
+            sum(rate(nginx_http_requests_total{job="nginx", status=~"5.."}[5m]))
+            /
+            clamp_min(sum(rate(nginx_http_requests_total{job="nginx"}[5m])), 1e-9)
+          ) > 0.05
+          and
+          sum(rate(nginx_http_requests_total{job="nginx"}[5m])) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+        annotations:
+          summary: Nginx 5xx error rate is high
+          description: More than 5 percent of requests returned 5xx responses with sufficient traffic.
