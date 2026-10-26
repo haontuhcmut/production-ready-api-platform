@@ -1,6 +1,6 @@
 {
   "uid": "api-gateway",
-  "title": "API Gateway — Kong & Nginx",
+  "title": "API Gateway \u2014 Kong & Nginx",
   "tags": [
     "kong",
     "nginx",
@@ -31,8 +31,8 @@
       "gridPos": {
         "x": 0,
         "y": 0,
-        "w": 8,
-        "h": 5
+        "w": 12,
+        "h": 4
       },
       "targets": [
         {
@@ -83,7 +83,7 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 5,
+        "y": 4,
         "w": 12,
         "h": 8
       },
@@ -116,8 +116,8 @@
         "uid": "prometheus"
       },
       "gridPos": {
-        "x": 12,
-        "y": 5,
+        "x": 0,
+        "y": 12,
         "w": 12,
         "h": 8
       },
@@ -143,7 +143,7 @@
     },
     {
       "id": 8,
-      "title": "Gateway Error Logs",
+      "title": "Gateway Errors \u2014 Kong & Nginx",
       "type": "logs",
       "datasource": {
         "type": "loki",
@@ -151,13 +151,216 @@
       },
       "gridPos": {
         "x": 0,
-        "y": 18,
+        "y": 20,
         "w": 24,
         "h": 10
       },
       "targets": [
         {
-          "expr": "{container=~\"api-nginx|api-kong\"} |~ \"502|503|upstream.*(error|refused|failed)\"",
+          "expr": "{container=~\"api-nginx|api-kong\"} |~ \"500|502|503|504\"",
+          "refId": "A",
+          "query": "{container=~\"api-nginx|api-kong\"} |~ \"500|502|503|504\""
+        }
+      ],
+      "options": {
+        "showTime": true,
+        "showLabels": true,
+        "showCommonLabels": false,
+        "wrapLogMessage": true,
+        "enableLogDetails": true,
+        "sortOrder": "Descending"
+      }
+    },
+    {
+      "id": 9004,
+      "title": "Nginx Availability",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 0,
+        "w": 12,
+        "h": 4
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "nginx_up",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "min": 0,
+          "max": 1,
+          "mappings": [
+            {
+              "type": "value",
+              "options": {
+                "0": {
+                  "text": "DOWN",
+                  "color": "red"
+                },
+                "1": {
+                  "text": "UP",
+                  "color": "green"
+                }
+              }
+            }
+          ]
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "values": false
+        },
+        "colorMode": "background",
+        "graphMode": "none"
+      }
+    },
+    {
+      "id": 9005,
+      "title": "Nginx Active Connections",
+      "type": "stat",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 12,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "nginx_connections_active",
+          "instant": true,
+          "range": false,
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "reduceOptions": {
+          "calcs": [
+            "lastNotNull"
+          ],
+          "fields": "",
+          "values": false
+        },
+        "orientation": "auto",
+        "textMode": "auto",
+        "colorMode": "value",
+        "graphMode": "none",
+        "justifyMode": "center"
+      }
+    },
+    {
+      "id": 9006,
+      "title": "Nginx Request Rate",
+      "type": "timeseries",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "prometheus"
+      },
+      "gridPos": {
+        "x": 12,
+        "y": 4,
+        "w": 12,
+        "h": 8
+      },
+      "targets": [
+        {
+          "datasource": {
+            "type": "prometheus",
+            "uid": "prometheus"
+          },
+          "editorMode": "code",
+          "expr": "rate(nginx_http_requests_total[5m])",
+          "instant": false,
+          "range": true,
+          "legendFormat": "{{instance}}",
+          "refId": "A"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "thresholds": {
+            "mode": "absolute",
+            "steps": [
+              {
+                "color": "green",
+                "value": null
+              }
+            ]
+          }
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "list",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "single",
+          "sort": "none"
+        }
+      }
+    },
+    {
+      "id": 9007,
+      "title": "Nginx Access Logs",
+      "type": "logs",
+      "datasource": {
+        "type": "loki",
+        "uid": "loki"
+      },
+      "gridPos": {
+        "x": 0,
+        "y": 30,
+        "w": 24,
+        "h": 8
+      },
+      "targets": [
+        {
+          "expr": "{container=\"api-nginx\"}",
           "refId": "A"
         }
       ],

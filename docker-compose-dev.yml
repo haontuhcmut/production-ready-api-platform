@@ -50,6 +50,18 @@ services:
       - gateway-network
       - observability-network
 
+  nginx-exporter:
+    image: nginx/nginx-prometheus-exporter:1.4.2
+    container_name: api-nginx-exporter
+    command:
+      - --nginx.scrape-uri=http://nginx:8081/stub_status
+    depends_on:
+      - nginx
+    restart: unless-stopped
+    networks:
+      - gateway-network
+      - observability-network
+
 networks:
   gateway-network:
     name: gateway-network

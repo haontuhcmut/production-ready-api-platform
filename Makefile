@@ -159,10 +159,14 @@ monitoring-alertmanager-status: ## Show Alertmanager status
 
 # Grafana dashboards
 dashboard-validate: ## Validate all provisioned dashboard JSON files
-	@test -n "$$(find $(GRAFANA_DASHBOARDS) -type f -name '*.json' -print -quit)" ||
-		(echo "ERROR: No dashboard JSON files found"; exit 1)
-	@find $(GRAFANA_DASHBOARDS) -type f -name '*.json'
-		-exec python3 -m json.tool {} \; > /dev/null
+	@files="$$(find $(GRAFANA_DASHBOARDS) -type f -name '*.json' -print)"; \
+	if [ -z "$$files" ]; then \
+		echo "ERROR: No dashboard JSON files found"; \
+		exit 1; \
+	fi; \
+	for file in $$files; do \
+		python3 -m json.tool "$$file" > /dev/null || exit 1; \
+	done
 	@echo "All Grafana dashboard JSON files are valid."
 
 dashboard-reload: dashboard-validate ## Validate dashboards and restart Grafana
